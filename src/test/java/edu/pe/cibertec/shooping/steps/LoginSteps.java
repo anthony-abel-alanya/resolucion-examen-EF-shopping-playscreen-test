@@ -1,14 +1,18 @@
 package edu.pe.cibertec.shooping.steps;
 
-import edu.pe.cibertec.shooping.tasks.Login;
-import edu.pe.cibertec.shooping.ui.TheMainScreen;
+import edu.pe.cibertec.shooping.hooks.AppiumHooks;
+import edu.pe.cibertec.shooping.ui.LoginScreen;
+import io.appium.java_client.AppiumBy;
+import io.appium.java_client.android.AndroidDriver;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
-import net.serenitybdd.screenplay.Actor;
-import net.serenitybdd.screenplay.actors.OnStage;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.openqa.selenium.WebElement;
 
-import static net.serenitybdd.screenplay.GivenWhenThen.seeThat;
-import static org.hamcrest.Matchers.equalTo;
+import java.time.Duration;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LoginSteps {
     private String email;
@@ -16,11 +20,11 @@ public class LoginSteps {
 
     @Given("Andrea opens the shopping Cart application")
     public void opensTheShoopingCartApplication() {
-        Actor andrea = OnStage.theActorCalled("Andrea");
-
+        assertTrue(LoginScreen.isVisibleFor(driver()),
+                "La pantalla de login debe mostrarse al abrir la aplicacion");
     }
 
-    @Given("she enters her email {string} and password {string}")
+    @When("she enters her email {string} and password {string}")
     public void entersHerEmailAndPassword(String email, String password) {
         this.email = email;
         this.password = password;
@@ -28,14 +32,43 @@ public class LoginSteps {
 
     @And("she taps the Login button")
     public void tapsTheLoginButton() {
-        OnStage.theActorInTheSpotlight()
-                .attemptsTo(Login.withCredentials(email, password));
+        typeInto("(//android.widget.EditText)[1]", email);
+        typeInto("(//android.widget.EditText)[2]", password);
+        driver().findElement(AppiumBy.xpath("(//android.widget.Button)[2]")).click();
+        pause();
     }
 
-    @And("she should see the main screen of the application")
+    @Then("she should see the main screen of the application")
     public void checksTheMainScreenOfTheApplication() {
-        OnStage.theActorInTheSpotlight()
-                .should(seeThat(TheMainScreen.isVisible(), equalTo(true)));
+        boolean visible = !driver().findElements(AppiumBy.xpath("//android.widget.TextView[@text='Productos']")).isEmpty()
+                || !driver().findElements(AppiumBy.xpath("//android.widget.TextView[contains(@text,'Buscar productos')]")).isEmpty()
+                || !driver().findElements(AppiumBy.xpath("//android.widget.TextView[contains(@text,'Electr')]")).isEmpty();
+        assertTrue(visible,
+                "El usuario deberia acceder exitosamente a la pantalla principal");
+    }
+
+    @Then("she should see an error message for invalid credentials")
+    public void sheShouldSeeAnErrorMessageForInvalidCredentials() {
+        assertTrue(LoginScreen.isErrorMessageVisibleFor(driver()),
+                "Deberia mostrarse un mensaje de error cuando el login falla");
+    }
+
+    private AndroidDriver driver() {
+        return AppiumHooks.getDriver();
+    }
+
+    private void typeInto(String xpath, String value) {
+        WebElement field = driver().findElement(AppiumBy.xpath(xpath));
+        field.click();
+        field.sendKeys(value);
+    }
+
+    private void pause() {
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }

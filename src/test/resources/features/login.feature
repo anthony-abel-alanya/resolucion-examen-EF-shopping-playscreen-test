@@ -8,3 +8,9 @@ Feature: Login to Shopping Cart application
     When she enters her email "user1@test.com" and password "password1"
     And she taps the Login button
     Then she should see the main screen of the application
+
+  Scenario: Failed login with invalid credentials
+    Given Andrea opens the shopping Cart application
+    When she enters her email "invalid@test.com" and password "wrong-password"
+    And she taps the Login button
+    Then she should see an error message for invalid credentials

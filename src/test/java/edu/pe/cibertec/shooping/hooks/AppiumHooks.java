@@ -19,7 +19,7 @@ public class AppiumHooks {
     private static final String APPIUM_SERVER_URL = "http://127.0.0.1:4723";
 
     @Before
-    public void setUp() throws MalformedInputException, MalformedURLException {
+    public void setUp() throws MalformedURLException {
         UiAutomator2Options options = new UiAutomator2Options()
                 .setPlatformName("Android")
                 .setAutomationName("UiAutomator2")
@@ -29,7 +29,7 @@ public class AppiumHooks {
                 .setNoReset(false)
                 .setNewCommandTimeout(Duration.ofSeconds(120));
 
-        driver = new AndroidDriver(options);
+        driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), options);
 
         OnStage.setTheStage(Cast.whereEveryoneCan(actor -> actor.whoCan(
                 BrowseTheWeb.with(driver)
