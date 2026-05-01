@@ -1,35 +1,38 @@
 package edu.pe.cibertec.shooping.ui;
 
 import io.appium.java_client.AppiumBy;
-import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.targets.Target;
 
 public class ShippingPage {
 
-    private static final Target SHIPPING_ADDRESS_FIELD = Target
-            .the("shipping address field")
-            .located(AppiumBy.xpath("//android.widget.EditText[contains(@text,'Dirección') or contains(@text,'Direccion') or contains(@text,'Address')]"));
+    private static final String CHECKOUT_FORM_EDITTEXTS =
+            "(//android.widget.ScrollView)[last()]//android.widget.EditText";
 
-    private static final Target CONFIRM_PURCHASE_BUTTON = Target
-            .the("confirm purchase button")
-            .located(AppiumBy.xpath("//android.widget.Button[@text='Confirmar compra' or @text='Confirm Purchase' or contains(@content-desc,'Confirm')]"));
-
-    private static final Target REQUIRED_ADDRESS_MESSAGE = Target
-            .the("required shipping address message")
-            .located(AppiumBy.xpath("//android.widget.TextView[contains(@text,'direccion') or contains(@text,'Dirección') or contains(@text,'required') or contains(@text,'obligatoria')]"));
-
-    private ShippingPage() {
+    public static Target shippingField(int index1Based) {
+        return Target.the("shipping / payment field " + index1Based)
+                .located(AppiumBy.xpath("(" + CHECKOUT_FORM_EDITTEXTS + ")[" + index1Based + "]"));
     }
 
-    public static Target shippingAddressField() {
-        return SHIPPING_ADDRESS_FIELD;
-    }
+    public static final Target CONFIRM_PURCHASE = Target.the("confirm purchase")
+            .located(AppiumBy.xpath(
+                    "(//android.widget.ScrollView)[last()]//android.widget.Button[last()]"
+                            + "|//android.widget.ScrollView/android.view.View[4]/android.widget.Button"
+                            + "|(//android.widget.ScrollView)[last()]/android.view.View[4]/android.widget.Button"
+                            + "|//androidx.compose.ui.platform.ComposeView//android.widget.Button[contains(@text,'Confirmar')]"
+                            + "|//androidx.compose.ui.platform.ComposeView//android.view.View[contains(@text,'Confirmar')]"
+                            + "|(//androidx.compose.ui.platform.ComposeView//android.widget.Button)[last()]"
+                            + "|//*[@clickable='true' and (contains(@text,'Confirmar') or contains(@content-desc,'Confirmar'))]"
+                            + "|//android.widget.TextView[contains(@text,'Confirmar Compr')]"
+                            + "|//*[contains(@text,'Confirmar') and contains(@text,'Compra')]"));
 
-    public static Target confirmPurchaseButton() {
-        return CONFIRM_PURCHASE_BUTTON;
-    }
+    public static final Target SUCCESS_MESSAGE = Target.the("purchase success message")
+            .located(AppiumBy.xpath(
+                    "//*[contains(@text,'exitos') or contains(@text,'Exitos') or contains(@text,'EXITOS') "
+                            + "or contains(@text,'éxito') or contains(@text,'Éxito') or contains(@text,'exito') "
+                            + "or contains(@text,'realizada') or contains(@text,'realizado') or contains(@text,'confirmad') "
+                            + "or contains(@text,'Gracias') or contains(@text,'success') or contains(@text,'Success')]"));
 
-    public static boolean isRequiredAddressMessageVisibleFor(Actor actor) {
-        return REQUIRED_ADDRESS_MESSAGE.resolveFor(actor).isVisible();
-    }
+    public static final Target ADDRESS_REQUIRED_MESSAGE = Target.the("address required message")
+            .located(AppiumBy.androidUIAutomator(
+                    "new UiSelector().textMatches(\"(?i).*requer.*\")"));
 }

@@ -1,6 +1,10 @@
 package edu.pe.cibertec.shooping.steps;
 
-import edu.pe.cibertec.shooping.hooks.AppiumHooks;
+import edu.pe.cibertec.shooping.tasks.Login;
+import edu.pe.cibertec.shooping.ui.CheckoutPage;
+import edu.pe.cibertec.shooping.ui.LoginScreen;
+import edu.pe.cibertec.shooping.ui.ShippingPage;
+import edu.pe.cibertec.shooping.ui.TheMainScreen;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.android.AndroidDriver;
 import io.cucumber.java.After;
@@ -9,115 +13,167 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebElement;
+import net.serenitybdd.screenplay.Actor;
+import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
+import net.serenitybdd.screenplay.actors.OnStage;
+import net.serenitybdd.screenplay.actions.Click;
+import net.serenitybdd.screenplay.actions.Enter;
+import net.serenitybdd.screenplay.matchers.WebElementStateMatchers;
+import net.serenitybdd.screenplay.questions.Visibility;
+import net.serenitybdd.screenplay.waits.WaitUntil;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.FluentWait;
 
+import java.time.Duration;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CheckoutSteps {
 
-    private boolean productAddedToCart;
-    private boolean shippingDataEntered;
-    private boolean confirmationAttempted;
+    private Actor actor;
 
-    @Before("@checkout")
-    public void beforeCheckoutScenario() {
-        productAddedToCart = false;
-        shippingDataEntered = false;
-        confirmationAttempted = false;
+    @Before(value = "@checkout", order = 1)
+    public void beforeCheckout() {
+        actor = OnStage.theActorCalled("Andrea");
     }
 
     @After("@checkout")
-    public void afterCheckoutScenario() {
-        productAddedToCart = false;
-        shippingDataEntered = false;
-        confirmationAttempted = false;
+    public void afterCheckout() {
+
     }
 
     @Given("que el usuario tiene productos en el carrito")
     public void queElUsuarioTieneProductosEnElCarrito() {
-        login();
-        clickAt(940, 808);
-        productAddedToCart = true;
+        ensureLoggedInAndOnCatalog();
+        actor.attemptsTo(
+                Click.on(CheckoutPage.FIRST_ADD_BUTTON),
+                Click.on(CheckoutPage.CART_TAB));
     }
 
     @Given("que el usuario tiene el carrito vacio")
     public void queElUsuarioTieneElCarritoVacio() {
-        login();
-        productAddedToCart = false;
+        ensureLoggedInAndOnCatalog();
+        actor.attemptsTo(Click.on(CheckoutPage.CART_TAB));
+    }
+
+    private void ensureLoggedInAndOnCatalog() {
+        if (Visibility.of(LoginScreen.EMAIL_FIELD).asBoolean().answeredBy(actor)) {
+            actor.attemptsTo(Login.withCredentials("user1@test.com", "password1"));
+        }
+        if (!TheMainScreen.isVisible().answeredBy(actor)) {
+            actor.attemptsTo(Click.on(TheMainScreen.INICIO_TAB));
+        }
+        assertTrue(
+                TheMainScreen.isVisible().answeredBy(actor),
+                "Se esperaba estar en la pantalla de Productos / catálogo (tras login o tab Inicio)");
     }
 
     @When("procede al checkout")
     public void procedeAlCheckout() {
-        assertTrue(productAddedToCart, "El usuario debe tener al menos un producto agregado antes del checkout");
-        openCart();
-        driver().findElement(AppiumBy.xpath("//android.view.View[@clickable='true'][.//android.widget.TextView[@text='Proceder al Pago']]")).click();
-        assertTrue(!driver().findElements(AppiumBy.xpath("//android.widget.TextView[@text='Checkout']")).isEmpty(),
-                "La pantalla de checkout debe mostrarse");
+        actor.attemptsTo(
+                Click.on(CheckoutPage.PROCEED_TO_CHECKOUT.waitingForNoMoreThan(Duration.ofSeconds(15))));
     }
 
     @When("intenta proceder al checkout")
     public void intentaProcederAlCheckout() {
-        openCart();
+
+        if (proceedToCheckoutCtaPresent(actor, Duration.ofSeconds(3))) {
+            actor.attemptsTo(
+                    Click.on(CheckoutPage.PROCEED_TO_CHECKOUT.waitingForNoMoreThan(Duration.ofSeconds(12))));
+        }
+    }
+
+    private static boolean proceedToCheckoutCtaPresent(Actor actor, Duration timeout) {
+        WebDriver driver = BrowseTheWeb.as(actor).getDriver();
+        try {
+            new FluentWait<>(driver)
+                    .withTimeout(timeout)
+                    .pollingEvery(Duration.ofMillis(200))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(
+                                    AppiumBy.androidUIAutomator("new UiSelector().textContains(\"Proceder\")"))
+                            .isEmpty());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
     }
 
     @And("ingresa los datos de envio")
     public void ingresaLosDatosDeEnvio() {
-        WebElement address = driver().findElement(AppiumBy.xpath("(//android.widget.EditText)[1]"));
-        address.click();
-        address.clear();
-        address.sendKeys("Av. Los Laureles 123");
-        shippingDataEntered = true;
+        actor.attemptsTo(
+                Enter.theValue("Av. Siempre Viva 742").into(ShippingPage.shippingField(1)),
+                Enter.theValue("Lima").into(ShippingPage.shippingField(2)),
+                Enter.theValue("15001").into(ShippingPage.shippingField(3)),
+                Enter.theValue("4111111111111111").into(ShippingPage.shippingField(4)),
+                Enter.theValue("123").into(ShippingPage.shippingField(5)),
+                Enter.theValue("12/30").into(ShippingPage.shippingField(6)));
+    }
+
+    @And("ingresa los datos de envio sin direccion")
+    public void ingresaLosDatosDeEnvioSinDireccion() {
+
+        actor.attemptsTo(
+                Enter.theValue("Lima").into(ShippingPage.shippingField(2)),
+                Enter.theValue("15001").into(ShippingPage.shippingField(3)),
+                Enter.theValue("4111111111111111").into(ShippingPage.shippingField(4)),
+                Enter.theValue("123").into(ShippingPage.shippingField(5)),
+                Enter.theValue("12/30").into(ShippingPage.shippingField(6)));
     }
 
     @And("confirma la compra")
     public void confirmaLaCompra() {
-        confirmationAttempted = true;
-        clickAt(540, 2370);
+        revealCheckoutConfirmControl(actor);
+        actor.attemptsTo(
+                Click.on(ShippingPage.CONFIRM_PURCHASE.waitingForNoMoreThan(Duration.ofSeconds(25))));
+    }
+
+    private static void revealCheckoutConfirmControl(Actor actor) {
+        AndroidDriver driver = (AndroidDriver) BrowseTheWeb.as(actor).getDriver();
+        Dimension size = driver.manage().window().getSize();
+        for (int i = 0; i < 3; i++) {
+            driver.executeScript(
+                    "mobile: swipeGesture",
+                    Map.of(
+                            "left", size.width / 4,
+                            "top", size.height / 6,
+                            "width", size.width / 2,
+                            "height", (int) (size.height * 0.55),
+                            "direction", "up",
+                            "percent", 0.6));
+        }
+        try {
+            driver.findElement(
+                    AppiumBy.androidUIAutomator(
+                            "new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView("
+                                    + "new UiSelector().textContains(\"Confirmar\"));"));
+        } catch (org.openqa.selenium.NoSuchElementException ignored) {
+
+        }
     }
 
     @Then("deberia ver el mensaje de compra exitosa")
     public void deberiaVerElMensajeDeCompraExitosa() {
-        assertTrue(shippingDataEntered && confirmationAttempted,
-                "La compra exitosa requiere direccion de envio y confirmacion");
+        actor.attemptsTo(
+                WaitUntil.the(ShippingPage.SUCCESS_MESSAGE, WebElementStateMatchers.isVisible())
+                        .forNoMoreThan(Duration.ofSeconds(20)));
     }
 
     @Then("deberia ver mensaje de carrito vacio")
     public void deberiaVerMensajeDeCarritoVacio() {
-        assertTrue(!driver().findElements(AppiumBy.xpath("//android.widget.TextView[contains(@text,'vacío') or contains(@text,'vacio')]")).isEmpty(),
-                "No se mostro el mensaje de carrito vacio");
+        assertTrue(
+                Visibility.of(CheckoutPage.EMPTY_CART_MESSAGE).asBoolean().answeredBy(actor),
+                "Se esperaba mensaje de carrito vacío");
     }
 
-    @Then("deberia ver mensaje de direccion de envio requerida")
-    public void deberiaVerMensajeDeDireccionDeEnvioRequerida() {
-        WebElement address = driver().findElement(AppiumBy.xpath("(//android.widget.EditText)[1]"));
-        address.click();
-        address.clear();
-        clickAt(540, 2370);
-        confirmationAttempted = true;
-        assertTrue(address.getText() == null || address.getText().isBlank(),
-                "La direccion de envio debe estar vacia en este escenario");
-    }
-
-    private void login() {
-        driver().findElement(AppiumBy.xpath("(//android.widget.EditText)[1]")).sendKeys("user1@test.com");
-        driver().findElement(AppiumBy.xpath("(//android.widget.EditText)[2]")).sendKeys("password1");
-        driver().findElement(AppiumBy.xpath("(//android.widget.Button)[2]")).click();
-        assertTrue(!driver().findElements(AppiumBy.xpath("//android.widget.TextView[@text='Productos']")).isEmpty(),
-                "El catalogo debe quedar visible despues del login");
-    }
-
-    private void openCart() {
-        driver().findElement(AppiumBy.xpath("//android.view.View[@clickable='true'][.//android.widget.TextView[@text='Carrito']]")).click();
-    }
-
-    private void clickAt(int x, int y) {
-        ((JavascriptExecutor) driver()).executeScript("mobile: clickGesture", Map.of("x", x, "y", y));
-    }
-
-    private AndroidDriver driver() {
-        return AppiumHooks.getDriver();
+    @Then("deberia ver un mensaje de direccion requerida")
+    public void deberiaVerUnMensajeDeDireccionRequerida() {
+        actor.attemptsTo(
+                WaitUntil.the(ShippingPage.ADDRESS_REQUIRED_MESSAGE, WebElementStateMatchers.isVisible())
+                        .forNoMoreThan(Duration.ofSeconds(22)));
     }
 }

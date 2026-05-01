@@ -13,8 +13,9 @@ Feature: Proceso de compra
     When intenta proceder al checkout
     Then deberia ver mensaje de carrito vacio
 
-  Scenario: No se puede completar la compra sin direccion de envio
+  Scenario: No se puede completar compra sin direccion
     Given que el usuario tiene productos en el carrito
     When procede al checkout
+    And ingresa los datos de envio sin direccion
     And confirma la compra
-    Then deberia ver mensaje de direccion de envio requerida
+    Then deberia ver un mensaje de direccion requerida
