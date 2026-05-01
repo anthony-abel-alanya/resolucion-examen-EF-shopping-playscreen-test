@@ -11,6 +11,6 @@ Feature: Login to Shopping Cart application
 
   Scenario: Failed login with invalid credentials
     Given Andrea opens the shopping Cart application
-    When she enters her email "invalid@test.com" and password "wrong-password"
+    When she enters her email "noexiste@test.com" and password "mala"
     And she taps the Login button
-    Then she should see an error message for invalid credentials
+    Then she should see a login error message

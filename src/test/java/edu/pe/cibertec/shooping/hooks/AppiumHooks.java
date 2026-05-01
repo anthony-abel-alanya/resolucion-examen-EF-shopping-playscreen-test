@@ -18,7 +18,7 @@ public class AppiumHooks {
     private static AndroidDriver driver;
     private static final String APPIUM_SERVER_URL = "http://127.0.0.1:4723";
 
-    @Before
+    @Before(order = 0)
     public void setUp() throws MalformedURLException {
         UiAutomator2Options options = new UiAutomator2Options()
                 .setPlatformName("Android")

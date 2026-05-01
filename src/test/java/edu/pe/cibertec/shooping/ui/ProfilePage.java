@@ -1,39 +1,31 @@
 package edu.pe.cibertec.shooping.ui;
 
 import io.appium.java_client.AppiumBy;
-import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.targets.Target;
 
 public class ProfilePage {
 
-    private static final Target USER_MENU_BUTTON = Target
-            .the("user menu button")
-            .located(AppiumBy.xpath("//android.widget.Button[contains(@content-desc,'user') or contains(@content-desc,'perfil') or contains(@content-desc,'profile')]"));
+    private ProfilePage() {}
 
-    private static final Target LOGGED_USER_DATA = Target
-            .the("logged user data")
-            .located(AppiumBy.xpath("//android.widget.TextView[contains(@text,'user1@test.com') or contains(@text,'Andrea') or contains(@text,'Perfil')]"));
+    public static final Target USER_MENU = Target.the("user / profile menu")
+            .located(AppiumBy.androidUIAutomator(
+                    "new UiSelector().descriptionContains(\"Perfil\")"));
 
-    private static final Target LOGOUT_BUTTON = Target
-            .the("logout button")
-            .located(AppiumBy.xpath("//android.widget.TextView[@text='Cerrar sesión' or @text='Cerrar sesion' or @text='Logout']"));
+    public static final Target USER_MENU_TEXT = Target.the("user / profile menu text")
+            .located(AppiumBy.androidUIAutomator(
+                    "new UiSelector().textContains(\"Perfil\")"));
 
-    private ProfilePage() {
+    public static final Target LOG_OUT = Target.the("log out")
+            .located(AppiumBy.androidUIAutomator(
+                    "new UiSelector().className(\"android.widget.Button\").instance(2)"));
+
+    public static final Target LOGOUT_DIALOG = Target.the("logout confirmation dialog")
+            .located(AppiumBy.androidUIAutomator(
+                    "new UiSelector().textMatches(\"(?i).*cerrar.*sesion.*\")"));
+
+    public static Target userEmailVisible(String email) {
+        return Target.the("logged-in user email: " + email)
+                .located(AppiumBy.xpath("//*[contains(@text,\"" + email + "\")]"));
     }
 
-    public static Target userMenuButton() {
-        return USER_MENU_BUTTON;
-    }
-
-    public static Target logoutButton() {
-        return LOGOUT_BUTTON;
-    }
-
-    public static boolean isUserDataVisibleFor(Actor actor) {
-        return LOGGED_USER_DATA.resolveFor(actor).isVisible();
-    }
-
-    public static boolean canLogout(Actor actor) {
-        return LOGOUT_BUTTON.resolveFor(actor).isVisible();
-    }
 }
