@@ -5,12 +5,12 @@ import io.appium.java_client.android.options.UiAutomator2Options;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
-import net.serenitybdd.screenplay.actors.Cast;
 import net.serenitybdd.screenplay.actors.OnStage;
+import net.serenitybdd.screenplay.actors.OnlineCast;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.MalformedInputException;
+
 import java.time.Duration;
 
 public class AppiumHooks {
@@ -31,9 +31,10 @@ public class AppiumHooks {
 
         driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), options);
 
-        OnStage.setTheStage(Cast.whereEveryoneCan(actor -> actor.whoCan(
-                BrowseTheWeb.with(driver)
-        )));
+        OnStage.setTheStage(new OnlineCast());
+
+        OnStage.theActorCalled("Andrea")
+                .whoCan(BrowseTheWeb.with(driver));
     }
 
     @After

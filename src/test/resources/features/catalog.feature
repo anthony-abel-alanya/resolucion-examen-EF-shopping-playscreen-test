@@ -13,5 +13,5 @@ Feature: Catalogo de productos
 
   Scenario: Filtrar productos por categoria
     Given que el usuario esta en el catalogo
-    When filtra productos por categoria "Electrónica"
+    When filtra los productos por la categoria "Electrónica"
     Then deberia ver productos de la categoria "Electrónica"

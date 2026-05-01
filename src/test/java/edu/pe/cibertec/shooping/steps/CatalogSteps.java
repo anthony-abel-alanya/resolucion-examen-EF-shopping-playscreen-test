@@ -1,91 +1,85 @@
 package edu.pe.cibertec.shooping.steps;
 
-import edu.pe.cibertec.shooping.hooks.AppiumHooks;
-import io.appium.java_client.AppiumBy;
-import io.appium.java_client.android.AndroidDriver;
+import edu.pe.cibertec.shooping.questions.TheProductList;
+import edu.pe.cibertec.shooping.tasks.FilterByCategory;
+import edu.pe.cibertec.shooping.tasks.Login;
+import edu.pe.cibertec.shooping.ui.ScreenPlayCatalogPage;
+import edu.pe.cibertec.shooping.ui.TheMainScreen;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.openqa.selenium.WebElement;
+import net.serenitybdd.screenplay.Actor;
+import net.serenitybdd.screenplay.actors.OnStage;
+import net.serenitybdd.screenplay.actions.Enter;
+import net.serenitybdd.screenplay.questions.Visibility;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CatalogSteps {
 
+    private Actor actor;
+
     @Before("@catalogo")
-    public void beforeCatalogScenario() {
+    public void beforeCatalog() {
+        // Stage/driver lifecycle is handled by AppiumHooks
     }
 
     @After("@catalogo")
-    public void afterCatalogScenario() {
+    public void afterCatalog() {
+        // Driver lifecycle is handled by AppiumHooks
     }
 
     @Given("que el usuario esta logueado en la aplicacion")
     public void queElUsuarioEstaLogueadoEnLaAplicacion() {
-        login("user1@test.com", "password1");
-        assertTrue(isCatalogVisible(),
-                "El catalogo debe mostrarse despues del login");
-    }
-
-    @Given("que el usuario esta en el catalogo")
-    public void queElUsuarioEstaEnElCatalogo() {
-        queElUsuarioEstaLogueadoEnLaAplicacion();
+        actor = OnStage.theActorCalled("Andrea");
+        actor.attemptsTo(Login.withCredentials("user1@test.com", "password1"));
+        assertTrue(TheMainScreen.isVisible().answeredBy(actor), "Se esperaba ver la pantalla principal (Productos)");
     }
 
     @When("navega al catalogo de productos")
     public void navegaAlCatalogoDeProductos() {
-        assertTrue(isCatalogVisible(),
-                "El usuario debe permanecer en el catalogo de productos");
-    }
-
-    @When("busca el producto {string}")
-    public void buscaElProducto(String productName) {
-        WebElement searchField = driver().findElement(AppiumBy.xpath("//android.widget.EditText"));
-        searchField.click();
-        searchField.clear();
-        searchField.sendKeys(productName);
-    }
-
-    @When("filtra productos por categoria {string}")
-    public void filtraProductosPorCategoria(String category) {
-        driver().findElement(AppiumBy.xpath("//android.view.View[@clickable='true'][.//android.widget.TextView[contains(@text,'" + normalizeCategory(category) + "')]]")).click();
+        assertTrue(TheMainScreen.isVisible().answeredBy(actor), "Se esperaba estar en el catalogo (Productos)");
     }
 
     @Then("deberia ver la lista de productos disponibles")
     public void deberiaVerLaListaDeProductosDisponibles() {
-        assertTrue(!driver().findElements(AppiumBy.xpath("//android.widget.TextView[@text='Laptop HP Pavilion']")).isEmpty(),
-                "La lista de productos disponibles no se mostro en el catalogo");
+        assertTrue(TheProductList.contains("Laptop HP Pavilion").answeredBy(actor),
+                "Se esperaba ver al menos un producto del listado");
+    }
+
+    @Given("que el usuario esta en el catalogo")
+    public void queElUsuarioEstaEnElCatalogo() {
+        if (actor == null) {
+            actor = OnStage.theActorCalled("Andrea");
+        }
+        if (!TheMainScreen.isVisible().answeredBy(actor)) {
+            actor.attemptsTo(Login.withCredentials("user1@test.com", "password1"));
+        }
+        assertTrue(TheMainScreen.isVisible().answeredBy(actor), "Se esperaba estar en el catalogo (Productos)");
+    }
+
+    @When("busca el producto {string}")
+    public void buscaElProducto(String text) {
+        actor.attemptsTo(Enter.theValue(text).into(ScreenPlayCatalogPage.SEARCH_FIELD));
     }
 
     @Then("deberia ver productos que contengan {string}")
-    public void deberiaVerProductosQueContengan(String productName) {
-        assertTrue(!driver().findElements(AppiumBy.xpath("//android.widget.TextView[contains(@text,'" + productName + "')]")).isEmpty(),
-                "No se encontraron productos que contengan el texto buscado");
+    public void deberiaVerProductosQueContengan(String text) {
+        assertTrue(
+                Visibility.of(ScreenPlayCatalogPage.productContaining(text)).asBoolean().answeredBy(actor),
+                "Se esperaba ver productos que contengan: " + text);
+    }
+
+    @When("filtra los productos por la categoria {string}")
+    public void filtraLosProductosPorLaCategoria(String category) {
+        actor.attemptsTo(FilterByCategory.of(category));
     }
 
     @Then("deberia ver productos de la categoria {string}")
     public void deberiaVerProductosDeLaCategoria(String category) {
-        assertTrue(!driver().findElements(AppiumBy.xpath("//android.widget.TextView[@text='Laptop HP Pavilion']")).isEmpty(),
-                "No se visualizaron productos para la categoria filtrada");
-    }
-
-    private AndroidDriver driver() {
-        return AppiumHooks.getDriver();
-    }
-
-    private void login(String email, String password) {
-        driver().findElement(AppiumBy.xpath("(//android.widget.EditText)[1]")).sendKeys(email);
-        driver().findElement(AppiumBy.xpath("(//android.widget.EditText)[2]")).sendKeys(password);
-        driver().findElement(AppiumBy.xpath("(//android.widget.Button)[2]")).click();
-    }
-
-    private boolean isCatalogVisible() {
-        return !driver().findElements(AppiumBy.xpath("//android.widget.TextView[@text='Productos']")).isEmpty();
-    }
-
-    private String normalizeCategory(String category) {
-        return category.startsWith("Electr") ? "Electr" : category;
+        assertTrue(TheProductList.contains("Laptop HP Pavilion").answeredBy(actor),
+                "Se esperaba ver productos al filtrar por: " + category);
     }
 }
